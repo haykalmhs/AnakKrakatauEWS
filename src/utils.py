@@ -1,8 +1,10 @@
 from obspy.core.util.attribdict import AttribDict
 from obspy.core.inventory import Inventory, read_inventory
 from infrapy.detection import beamforming_new
+from pathlib import Path
 import pandas as pd
 from obspy import read
+import re
 import glob
 import os
 
@@ -87,7 +89,34 @@ def sac_to_csv(file_path, output_folder, freqmin, freqmax):
     csv_output_path = os.path.join(output_folder, csv_file_name)
 
     # Write the DataFrame to a CSV file
-    df_output.to_csv(csv_output_path)
+    df_output.to_csv(csv_output_path, index_label='DateTime')
 
     return csv_output_path  # Optionally return the path to the created CSV file
     
+def sac_file_parser(filepath):
+    filename = os.path.basename(filepath)
+    parts = filename.split('.')
+    network = parts[0]
+    station = parts[1]
+    channel = parts[2]
+    times = ''.join(parts[3:-1])  # Exclude the extension part
+    return network, station, channel, times
+
+def sac_path_grouping(folder_path):
+    # Get a list of all .sac files in the folder
+    sac_files = list(Path(folder_path).rglob('*.sac'))
+
+    # Dictionary to hold the grouped paths
+    grouped_paths = {}
+
+    # Parse and group the file paths
+    for sac_file in sac_files:
+        network, station, channel, times = sac_file_parser(sac_file.name)
+        key = (network, channel, times)
+        grouped_path = f"{network}.I06H*.{channel}.{times}.sac"
+        grouped_paths[key] = grouped_path
+
+    # Create a DataFrame from the grouped paths
+    df_grouped_paths = pd.DataFrame(list(grouped_paths.values()), columns=['GroupedFilePath'])
+    
+    return df_grouped_paths
