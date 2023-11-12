@@ -1,1 +1,6 @@
-waveform_collection/
+*.mseed
+*.sac
+*.csv
+*.tar.gz
+*.json
+*.dat
