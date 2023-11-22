@@ -5,7 +5,8 @@ from pathlib import Path
 import pandas as pd
 from obspy import read
 from infrapy.utils.data_io import json_to_detection_list
-from tqdm import tqdm
+from tqdm.notebook import tqdm
+import numpy as np
 import json
 import re
 import glob
@@ -60,7 +61,7 @@ def mseed_to_sac(input_directory, output_directory, stationxml_directory):
             tr.write(os.path.join(output_directory, sac_filename), format='SAC')
 
 
-def sac_to_csv(file_path, output_folder, freqmin, freqmax):
+def sac_to_csv(file_path, output_folder, freq):
     # Ensure the output directory exists
     if not os.path.isdir(output_folder):
         os.makedirs(output_folder)
@@ -76,7 +77,7 @@ def sac_to_csv(file_path, output_folder, freqmin, freqmax):
     stream = read(file_path)
 
     # Apply the Butterworth bandpass filter with configurable freqmin and freqmax
-    stream.filter('bandpass', freqmin=freqmin, freqmax=freqmax)
+    stream.filter('lowpass', freq=freq)
 
     # Process the stream using the custom function provided
     x, t, t0, _ = beamforming_new.stream_to_array_data(stream)
@@ -175,5 +176,4 @@ def extract_det_from_csv(csv_folder, detection_file, output_folder):
             trimmed_filename = os.path.join(output_folder, f"{file.split('.')[0]}_det_{i}_{t_start_str}_to_{t_end_str}.csv")
             trimmed_df.to_csv(trimmed_filename, index=True)
             print(f"Saved trimmed data to {trimmed_filename}")
-
 

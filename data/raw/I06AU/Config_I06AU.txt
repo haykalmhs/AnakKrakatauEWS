@@ -1,0 +1,25 @@
+[WAVEFORM IO]
+local_wvfrms = /run/media/viblab/Markov2/Haykal/AnakKrakatauEWS/data/raw/I06AU/I06AU_SAC/*.sac
+
+[DETECTION IO]
+local_fk_label = auto
+local_detect_label = auto
+
+[FK]
+back_az_min = 50
+back_az_max = 60
+back_az_step = 1
+freq_min = 0.7
+freq_max = 4.0
+window_len = 6.0
+window_step = 3.0
+trace_vel_min = 300
+trace_vel_max = 600
+trace_vel_step: 2.5
+cpu_cnt = 10
+
+[FD]
+p_value = 0.05
+min_duration = 10.0
+back_az_width = 5
+merge_dets = False
