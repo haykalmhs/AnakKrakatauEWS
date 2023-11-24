@@ -177,3 +177,63 @@ def extract_det_from_csv(csv_folder, detection_file, output_folder):
             trimmed_df.to_csv(trimmed_filename, index=True)
             print(f"Saved trimmed data to {trimmed_filename}")
 
+def get_features(sig, sensor_id):
+    """Analysis of a signal. Grabs temporal and frequential features.
+    Returns a pandas dataframe"""
+
+    fourier = fftpack.fft(sig.values)
+    real, imag = np.real(fourier), np.imag(fourier)
+
+    # Temporal data
+    features = {}
+    features[f"{sensor_id}_mean"] = [sig.mean()]
+    features[f"{sensor_id}_var"] = [sig.var()]
+    features[f"{sensor_id}_skew"] = [sig.skew()]
+    features[f"{sensor_id}_delta"] = [sig.max() - sig.min()]
+    features[f"{sensor_id}_mad"] = [(sig - sig.mean()).abs().mean()]
+    features[f"{sensor_id}_kurtosis"] = [sig.kurtosis()]
+    features[f"{sensor_id}_sem"] = [sig.sem()]
+    features[f"{sensor_id}_q5"] = [np.quantile(sig, 0.05)]
+    features[f"{sensor_id}_q25"] = [np.quantile(sig, 0.25)]
+    features[f"{sensor_id}_q75"] = [np.quantile(sig, 0.75)]
+    features[f"{sensor_id}_q95"] = [np.quantile(sig, 0.95)]
+    grad_rol_max = [maximum_filter1d(np.gradient(np.abs(sig.values)), 50)]
+    delta = np.max(grad_rol_max) - np.min(grad_rol_max)
+    features[f"{sensor_id}_grmax_delta"] = delta
+
+    # Frequencial
+    features[f"{sensor_id}_real_mean"] = [real.mean()]
+    features[f"{sensor_id}_real_var"] = [real.var()]
+    features[f"{sensor_id}_real_delta"] = [real.max() - real.min()]
+
+    features[f"{sensor_id}_imag_mean"] = [imag.mean()]
+    features[f"{sensor_id}_imag_var"] = [imag.var()]
+    features[f"{sensor_id}_imag_delta"] = [imag.max() - imag.min()]
+
+    features[f"{sensor_id}_nb_peak"] = fc.number_peaks(sig.values, 2)
+    features[f"{sensor_id}_median_roll_std"] = np.median(
+        pd.Series(sig).rolling(50).std().dropna().values)
+    features[f"{sensor_id}_autocorr5"] = fc.autocorrelation(sig, 5)
+
+    # Added 16
+    features[f"{sensor_id}_nb_peak_3"] = fc.number_peaks(sig.values, 3)
+    features[f"{sensor_id}_absquant95"] = np.quantile(np.abs(sig), 0.95)
+
+    try:
+        # Mel-frequency cepstral coefficients
+        mfcc_mean = mfcc(sig.values).mean(axis=1)
+        for i in range(20):
+            features[f"{sensor_id}_mfcc_mean_{i}"] = mfcc_mean[i]
+        # Contrast spectral
+        spec_contrast = spectral_contrast(sig.values).mean(axis=1)
+        for i in range(7):
+            features[f"{sensor_id}_lib_spec_cont_{i}"] = spec_contrast[i]
+        features[f"{sensor_id}_zero_cross"] = zero_crossing_rate(sig)[0].mean()
+        # Added 16
+        features[f"{sensor_id}_percentile_roll20_std_50"] = np.percentile(
+            sig.rolling(20).std().dropna().values, 50)
+
+    except:
+        pass
+
+    return pd.DataFrame.from_dict(features)
